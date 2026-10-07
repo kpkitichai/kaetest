@@ -42,9 +42,20 @@ const tierOf = (amount, baseline) => {
 
 let month = today().slice(0, 7);
 let settings = { baseline: 0, threshold: 0 };
+let token = null; // LIFF ID token, or "dev:<name>" in DEV_MODE
+let inLiff = false;
+let greeting = "";
 
 async function api(path, opts = {}) {
-  const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  const res = await fetch(path, {
+    ...opts,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 401 && inLiff) {
+    // ID token expired: log in again to get a fresh one.
+    liff.login({ redirectUri: location.href });
+    throw new Error("กำลังเข้าสู่ระบบใหม่…");
+  }
   const body = res.status === 204 ? null : await res.json();
   if (!res.ok) throw Object.assign(new Error(body?.error || res.statusText), { status: res.status });
   return body;
@@ -111,7 +122,8 @@ function renderSummary(sum) {
     .join("");
 
   const [text, worried] = chefComment(sum);
-  say(text, worried);
+  say(greeting + text, worried);
+  greeting = "";
   $("#amount").placeholder = `≥ ${money(settings.threshold)}`;
 }
 
@@ -211,6 +223,17 @@ $("#open-settings").onclick = () => {
   dlg.returnValue = "";
   dlg.showModal();
 };
+$("#wipe").onclick = async () => {
+  if (!confirm("ลบรายจ่ายและการตั้งค่าทั้งหมดของคุณถาวร? กู้คืนไม่ได้นะ")) return;
+  dlg.close();
+  try {
+    await api("/api/me", { method: "DELETE" });
+    toast("ล้างร้านเรียบร้อย ข้อมูลทั้งหมดถูกลบแล้ว");
+    await load();
+  } catch (err) {
+    say(`ลบไม่ได้: ${err.message}`, true);
+  }
+};
 dlg.addEventListener("close", async () => {
   if (dlg.returnValue !== "save") return;
   const f = $("#settings-form");
@@ -226,5 +249,33 @@ dlg.addEventListener("close", async () => {
   }
 });
 
-syncDate();
-load();
+async function boot() {
+  try {
+    const cfg = await fetch("/api/config").then((r) => r.json());
+    let name = "";
+    if (cfg.liffId) {
+      await liff.init({ liffId: cfg.liffId });
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: location.href });
+        return;
+      }
+      inLiff = true;
+      token = liff.getIDToken();
+      name = await liff.getProfile().then((p) => p.displayName, () => "");
+    } else if (cfg.devMode) {
+      // ?user=alice simulates a different LINE user.
+      name = new URLSearchParams(location.search).get("user") || "local";
+      token = `dev:${encodeURIComponent(name)}`;
+    } else {
+      throw new Error("ยังไม่ได้ตั้งค่า LIFF_ID");
+    }
+    if (name) greeting = `สวัสดีคุณ${name}! `;
+  } catch (err) {
+    say(`เปิดร้านไม่ได้: ${err.message}`, true);
+    return;
+  }
+  syncDate();
+  load();
+}
+
+boot();

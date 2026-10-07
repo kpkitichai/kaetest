@@ -78,7 +78,10 @@ body {
 }
 .sign small { display: block; font-family: "Itim", sans-serif; font-weight: 400; font-size: 15px; color: var(--muted); }
 
-main { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 8px 16px 48px; }
+main {
+  position: relative; z-index: 1; max-width: 720px; margin: 0 auto;
+  padding: 8px max(16px, env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
 
 /* ---------- chef + bubble ---------- */
 .counter { display: flex; align-items: flex-end; gap: 12px; margin-top: 12px; }
@@ -236,6 +239,9 @@ input, select {
 .bar.current .lbl { font-weight: 700; color: var(--tuna); }
 
 .foot { margin-top: 28px; text-align: center; }
+.foot a { color: var(--rice); font-size: 14px; }
+.btn.danger { background: #fff; color: var(--tuna); width: 100%; }
+dialog hr { width: 100%; border: none; border-top: 2px dashed var(--ink); margin: 4px 0; }
 
 /* ---------- dialog & toast ---------- */
 dialog {

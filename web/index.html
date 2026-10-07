@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>บัญชีปลาใหญ่</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,6 +95,7 @@
 
   <footer class="foot">
     <button class="btn" id="open-settings">⚙️ ตั้งค่าร้าน</button>
+    <p><a href="/privacy">นโยบายความเป็นส่วนตัว</a></p>
   </footer>
 </main>
 
@@ -112,10 +113,13 @@
       <button class="btn" value="cancel" formnovalidate>ยกเลิก</button>
       <button class="btn primary" value="save">บันทึก</button>
     </div>
+    <hr>
+    <button class="btn danger" type="button" id="wipe">🗑️ ลบข้อมูลทั้งหมดของฉัน</button>
   </form>
 </dialog>
 
 <div class="toast" id="toast" role="status"></div>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js" charset="utf-8"></script>
 <script src="app.js"></script>
 </body>
 </html>
