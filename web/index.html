@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>บัญชีปลาใหญ่</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Itim&family=Mitr:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="sea" aria-hidden="true">
+  <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+</div>
+
+<header class="shop">
+  <div class="noren" aria-hidden="true">
+    <span>ปลา</span><span>ใหญ่</span><span>ซูชิ</span>
+  </div>
+  <h1 class="sign">บัญชีปลาใหญ่ <small>จดเฉพาะรายจ่ายพิเศษประจำเดือน</small></h1>
+</header>
+
+<main>
+  <section class="counter">
+    <svg class="chef" id="chef" viewBox="0 0 120 120" role="img" aria-label="เชฟประจำร้าน">
+      <path d="M18 120 Q18 84 60 84 Q102 84 102 120Z" fill="#fff4e0" stroke="#1b2a3a" stroke-width="4"/>
+      <path d="M46 86 L60 106 L74 86" fill="none" stroke="#1b2a3a" stroke-width="4" stroke-linejoin="round"/>
+      <circle cx="60" cy="54" r="32" fill="#f6c9a0" stroke="#1b2a3a" stroke-width="4"/>
+      <path d="M27 46 Q60 28 93 46 L93 56 Q60 40 27 56Z" fill="#fff" stroke="#1b2a3a" stroke-width="4" stroke-linejoin="round"/>
+      <circle cx="60" cy="42" r="5" fill="#e63946"/>
+      <path d="M93 48 l15 -8 l-3 14z M93 52 l12 6 l-11 4z" fill="#fff" stroke="#1b2a3a" stroke-width="3" stroke-linejoin="round"/>
+      <g class="eyes-happy"><path d="M42 62 q6 -6 12 0 M66 62 q6 -6 12 0" stroke="#1b2a3a" stroke-width="4" fill="none" stroke-linecap="round"/></g>
+      <g class="eyes-worried"><circle cx="48" cy="61" r="4" fill="#1b2a3a"/><circle cx="72" cy="61" r="4" fill="#1b2a3a"/><path d="M41 53 l12 3 M79 53 l-12 3" stroke="#1b2a3a" stroke-width="3" stroke-linecap="round"/></g>
+      <circle cx="40" cy="71" r="5" fill="#ff9c8a" opacity=".7"/><circle cx="80" cy="71" r="5" fill="#ff9c8a" opacity=".7"/>
+      <path d="M60 71 q-10 -5 -20 4 q11 3 20 -1 q9 4 20 1 q-10 -9 -20 -4z" fill="#3a2a20" stroke="#1b2a3a" stroke-width="2" stroke-linejoin="round"/>
+      <path class="mouth" d="M54 79 q6 6 12 0" stroke="#1b2a3a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path class="sweat" d="M90 60 q5 8 0 11 q-5 -3 0 -11z" fill="#7fd3ff" stroke="#1b2a3a" stroke-width="2"/>
+    </svg>
+    <p class="bubble" id="bubble" aria-live="polite">กำลังเปิดร้าน…</p>
+  </section>
+
+  <nav class="month-nav" aria-label="เลือกเดือน">
+    <button class="btn round" id="prev" aria-label="เดือนก่อน">◀</button>
+    <h2 id="month-label">—</h2>
+    <button class="btn round" id="next" aria-label="เดือนถัดไป">▶</button>
+  </nav>
+
+  <section class="board" aria-labelledby="board-title">
+    <h3 id="board-title" class="board-title">ยอดรายจ่ายพิเศษเดือนนี้</h3>
+    <p class="big-total">฿<span id="total">0</span></p>
+    <div class="meter" role="meter" aria-label="เทียบกับค่าใช้จ่ายปกติ" aria-valuemin="0" aria-valuemax="100" id="meter">
+      <div class="meter-fill" id="meter-fill"></div>
+      <span class="meter-text" id="meter-text"></span>
+    </div>
+    <dl class="stats">
+      <div><dt>จำนวนปลา</dt><dd id="count">0</dd></div>
+      <div><dt>ตัวใหญ่สุด</dt><dd id="biggest">—</dd></div>
+      <div><dt>เทียบเดือนก่อน</dt><dd id="vs-prev">—</dd></div>
+    </dl>
+  </section>
+
+  <section class="ticket" aria-labelledby="ticket-title">
+    <h3 id="ticket-title">🎣 จับปลาใหญ่ตัวใหม่</h3>
+    <form id="add-form" autocomplete="off">
+      <label class="full">รายการ
+        <input name="title" required maxlength="80" placeholder="เช่น ทำฟัน, ซ่อมรถ, ซองงานแต่ง">
+      </label>
+      <label>จำนวนเงิน (บาท)
+        <input name="amount" type="number" inputmode="decimal" min="0" step="0.01" required id="amount">
+      </label>
+      <label>วันที่
+        <input name="date" type="date" required id="date">
+      </label>
+      <label class="full">หมวด
+        <select name="category" id="category"></select>
+      </label>
+      <label class="full">โน้ต (ไม่ใส่ก็ได้)
+        <input name="note" maxlength="140" placeholder="ทำไมเดือนนี้ถึงจ่ายเยอะ?">
+      </label>
+      <p class="hint full" id="amount-hint"></p>
+      <button class="btn primary full" type="submit">เสิร์ฟลงสายพาน 🍣</button>
+    </form>
+  </section>
+
+  <section class="belt-wrap" aria-labelledby="belt-title">
+    <h3 id="belt-title" class="section-title">สายพานรายจ่าย</h3>
+    <ul class="belt" id="list"></ul>
+  </section>
+
+  <section class="history" aria-labelledby="hist-title">
+    <h3 id="hist-title" class="section-title">ปลาใหญ่ย้อนหลัง 6 เดือน</h3>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <footer class="foot">
+    <button class="btn" id="open-settings">⚙️ ตั้งค่าร้าน</button>
+  </footer>
+</main>
+
+<dialog id="settings">
+  <form method="dialog" id="settings-form">
+    <h3>ตั้งค่าร้าน</h3>
+    <label>ค่าใช้จ่ายปกติต่อเดือน (บาท)
+      <input name="baseline" type="number" min="0" step="1" required>
+    </label>
+    <label>จดเฉพาะรายจ่ายตั้งแต่ (บาท)
+      <input name="threshold" type="number" min="0" step="1" required>
+    </label>
+    <p class="hint">รายจ่ายที่ต่ำกว่านี้คือ "ปลาตัวเล็ก" — ปล่อยคืนทะเล ไม่ต้องจด</p>
+    <div class="row">
+      <button class="btn" value="cancel" formnovalidate>ยกเลิก</button>
+      <button class="btn primary" value="save">บันทึก</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="app.js"></script>
+</body>
+</html>
