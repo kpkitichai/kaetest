@@ -13,7 +13,7 @@ import (
 
 func newTestServer(t *testing.T, v Verifier) *httptest.Server {
 	t.Helper()
-	l, _ := newTestLedger(t)
+	l := newTestLedger(t)
 	srv := httptest.NewServer(newServer(l, v, Config{LIFFID: "123-abc"}))
 	t.Cleanup(srv.Close)
 	return srv

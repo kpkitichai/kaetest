@@ -47,13 +47,11 @@ func main() {
 
 	var db Backend
 	var err error
-	switch os.Getenv("STORAGE") {
-	case "firestore":
-		db, err = OpenFirestoreBackend(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
-	case "", "file":
+	if url := os.Getenv("DATABASE_URL"); url != "" {
+		db, err = OpenPostgresBackend(ctx, url)
+	} else {
+		log.Print("DATABASE_URL not set: storing data in a local JSON file")
 		db, err = OpenFileBackend(envOr("DATA_FILE", "data.json"))
-	default:
-		log.Fatalf("unknown STORAGE %q (want file or firestore)", os.Getenv("STORAGE"))
 	}
 	if err != nil {
 		log.Fatal(err)

@@ -3,22 +3,66 @@ package main
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 )
 
-func newTestLedger(t *testing.T) (*Ledger, string) {
+// opener opens a backend; calling it twice returns two handles on the same data.
+type opener func(t *testing.T) Backend
+
+// forEachBackend runs fn against the file backend, and against Postgres when
+// TEST_DATABASE_URL is set (its tables are wiped).
+func forEachBackend(t *testing.T, fn func(t *testing.T, open opener)) {
+	t.Run("file", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "data.json")
+		fn(t, func(t *testing.T) Backend {
+			b, err := OpenFileBackend(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return b
+		})
+	})
+	url := os.Getenv("TEST_DATABASE_URL")
+	if url == "" {
+		return
+	}
+	t.Run("postgres", func(t *testing.T) {
+		fn(t, func(t *testing.T) Backend {
+			b, err := OpenPostgresBackend(context.Background(), url)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(b.db.Close)
+			return b
+		})
+	})
+}
+
+func wipe(t *testing.T, b Backend) {
+	if pg, ok := b.(*PostgresBackend); ok {
+		if _, err := pg.db.Exec(context.Background(), "truncate settings, expenses"); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func newTestLedger(t *testing.T) *Ledger {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "data.json")
-	fb, err := OpenFileBackend(path)
+	fb, err := OpenFileBackend(filepath.Join(t.TempDir(), "data.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &Ledger{db: fb}, path
+	return &Ledger{db: fb}
 }
 
-func TestDefaultsAndValidation(t *testing.T) {
-	l, _ := newTestLedger(t)
+func TestDefaultsAndValidation(t *testing.T) { forEachBackend(t, testDefaultsAndValidation) }
+
+func testDefaultsAndValidation(t *testing.T, open opener) {
+	b := open(t)
+	wipe(t, b)
+	l := &Ledger{db: b}
 	ctx := context.Background()
 	if s, _ := l.Settings(ctx, "u1"); s != defaultSettings {
 		t.Fatalf("settings = %+v, want defaults", s)
@@ -41,7 +85,13 @@ func TestDefaultsAndValidation(t *testing.T) {
 }
 
 func TestSummaryPersistenceAndIsolation(t *testing.T) {
-	l, path := newTestLedger(t)
+	forEachBackend(t, testSummaryPersistenceAndIsolation)
+}
+
+func testSummaryPersistenceAndIsolation(t *testing.T, open opener) {
+	b := open(t)
+	wipe(t, b)
+	l := &Ledger{db: b}
 	ctx := context.Background()
 	l.SetSettings(ctx, "u1", Settings{Baseline: 10000, Threshold: 1000})
 	for _, e := range []Expense{
@@ -59,11 +109,7 @@ func TestSummaryPersistenceAndIsolation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fb, err := OpenFileBackend(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	l = &Ledger{db: fb}
+	l = &Ledger{db: open(t)} // fresh handle: data must have been persisted
 	sum, err := l.Summary(ctx, "u1", "2026-10")
 	if err != nil {
 		t.Fatal(err)
@@ -83,8 +129,12 @@ func TestSummaryPersistenceAndIsolation(t *testing.T) {
 	}
 }
 
-func TestDeleteAndDeleteUser(t *testing.T) {
-	l, _ := newTestLedger(t)
+func TestDeleteAndDeleteUser(t *testing.T) { forEachBackend(t, testDeleteAndDeleteUser) }
+
+func testDeleteAndDeleteUser(t *testing.T, open opener) {
+	b := open(t)
+	wipe(t, b)
+	l := &Ledger{db: b}
 	ctx := context.Background()
 	e, _ := l.Add(ctx, "u1", Expense{Date: "2026-10-01", Amount: 3000, Title: "tire"})
 	if err := l.Delete(ctx, "u2", e.ID); !errors.Is(err, ErrNotFound) {

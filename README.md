@@ -20,30 +20,40 @@ go test ./...
 |---|---|
 | `LINE_CHANNEL_ID` | Channel ID ของ LINE MINI App channel (ใช้ตรวจ ID token) — **จำเป็น** ใน production |
 | `LIFF_ID` | LIFF ID (Developing / Review / Published ใช้คนละค่า) |
-| `STORAGE` | `firestore` หรือ `file` (ค่าเริ่มต้น `file`; Docker image ตั้งเป็น `firestore`) |
-| `GOOGLE_CLOUD_PROJECT` | Project ID ของ Firestore (บน Cloud Run หาให้เอง) |
-| `DATA_FILE` | path ไฟล์ JSON เมื่อ `STORAGE=file` (ค่าเริ่มต้น `data.json`) |
+| `DATABASE_URL` | Postgres connection string (Supabase) — ถ้าไม่ใส่จะเก็บลงไฟล์ JSON |
+| `DATA_FILE` | path ไฟล์ JSON เมื่อไม่มี `DATABASE_URL` (ค่าเริ่มต้น `data.json`) |
 | `CONTACT_EMAIL` | อีเมลที่แสดงในหน้า `/privacy` |
 | `DEV_MODE` | `1` = รับ token `dev:<name>` เพื่อรันนอก LINE — **ห้ามเปิดใน production** |
 | `PORT` | ค่าเริ่มต้น `8080` |
 
-## Deploy ขึ้น Cloud Run + Firestore
+เทสกับ Postgres: `TEST_DATABASE_URL=postgres://... go test ./...` (ตารางจะถูกล้าง — ใช้ฐานข้อมูลทดสอบเท่านั้น)
+
+## 1. Supabase (ฐานข้อมูล)
+
+1. สร้าง project ที่ [supabase.com](https://supabase.com) — region **Southeast Asia (Singapore)**
+2. กด **Connect** → เลือก **Session pooler** → คัดลอก connection string (รองรับ IPv4) แล้วแทน `[YOUR-PASSWORD]`
+3. ไม่ต้องสร้างตารางเอง แอปจะรัน `schema.sql` ให้ตอนเริ่ม (เปิด RLS ไว้ เพื่อไม่ให้ใครอ่านข้อมูลผ่าน Supabase REST API ได้)
+
+## 2. Hostinger VPS (ต้องเป็นแผน VPS — Web/Cloud hosting รัน Go ไม่ได้)
+
+1. ซื้อ VPS (KVM 1 ก็พอ) เลือก OS template **Ubuntu 24.04 with Docker**
+2. ตั้ง DNS: เพิ่ม **A record** ของโดเมน/ซับโดเมน (เช่น `bigcatch.yourdomain.com`) ชี้ไปที่ IP ของ VPS
+3. SSH เข้า VPS แล้ว:
 
 ```sh
-gcloud config set project YOUR_PROJECT_ID
-gcloud services enable run.googleapis.com firestore.googleapis.com cloudbuild.googleapis.com
-gcloud firestore databases create --location=asia-southeast1      # ครั้งแรกครั้งเดียว
-
-gcloud run deploy big-catch --source . --region asia-southeast1 --allow-unauthenticated \
-  --set-env-vars LINE_CHANNEL_ID=xxxxxxxxxx,LIFF_ID=xxxxxxxxxx-xxxxxxxx,CONTACT_EMAIL=you@example.com
+git clone https://github.com/kpkitichai/kaetest.git bigcatch && cd bigcatch
+git checkout claude/go-hello-world-gffbyq
+cp .env.example .env && nano .env      # ใส่ DOMAIN, LINE_CHANNEL_ID, LIFF_ID, DATABASE_URL, CONTACT_EMAIL
+docker compose up -d --build
 ```
 
-service account ของ Cloud Run ต้องมี role `roles/datastore.user` (default compute service account มักมีสิทธิ์อยู่แล้ว)
+Caddy จะขอใบรับรอง HTTPS ให้อัตโนมัติ เปิด `https://<DOMAIN>/privacy` เพื่อเช็กว่าใช้ได้
+อัปเดตเวอร์ชันใหม่: `git pull && docker compose up -d --build`
 
-## ตั้งค่าใน LINE Developers Console
+## 3. ตั้งค่าใน LINE Developers Console
 
 1. LINE MINI App channel → แท็บ **Web app settings**
-2. ใส่ **Endpoint URL** = URL ของ Cloud Run (เช่น `https://big-catch-xxxx.a.run.app`)
+2. **Endpoint URL** = `https://<DOMAIN>`
 3. Scopes: เลือก `openid` และ `profile`
-4. Privacy policy URL = `https://<cloud-run-url>/privacy`
+4. Privacy policy URL = `https://<DOMAIN>/privacy`
 5. เปิดลิงก์ `https://miniapp.line.me/<LIFF_ID>` ในแอป LINE บนมือถือเพื่อทดสอบ
